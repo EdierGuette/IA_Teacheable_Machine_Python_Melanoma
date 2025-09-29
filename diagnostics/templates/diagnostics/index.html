@@ -1,0 +1,120 @@
+{% load static %}
+
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SkinCare AI — Dashboard</title>
+  <link rel="icon" href="{% static 'diagnostics/img/favicon.ico' %}" type="image/x-icon">
+  <link rel="stylesheet" href="{% static 'diagnostics/css/style.css' %}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">SkinCare <span>AI</span></div>
+      <nav class="menu">
+        <button class="menu-btn active" data-view="home">Inicio</button>
+        <button class="menu-btn" data-view="diagnose">Hacer diagnóstico</button>
+        <button class="menu-btn" data-view="results" id="resultsBtn">Resultados</button>
+        <button class="menu-btn" data-view="history">Historial</button>
+      </nav>
+      <footer class="sidebar-footer">Versión demo · Local</footer>
+    </aside>
+
+    <main class="main">
+      <!-- HOME -->
+      <section class="view" id="home">
+        <h1>Bienvenido a SkinCare AI</h1>
+        <p class="lead">Plataforma demo para clasificación de lesiones cutáneas basada en un modelo de Teachable Machine.</p>
+
+        <div class="cards">
+          <div class="card">
+            <h3>Qué es el cáncer de piel</h3>
+            <p>El cáncer de piel es el crecimiento anormal de células en la piel. Tipos comunes: carcinoma basocelular, carcinoma escamocelular y melanoma.</p>
+          </div>
+          <div class="card">
+            <h3>Prevención</h3>
+            <ul>
+              <li>Usar protector solar (SPF 30+)</li>
+              <li>Evitar exposición directa entre 10 a.m. y 4 p.m.</li>
+              <li>Revisar cambios en lunares</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- DIAGNOSE -->
+      <section class="view hidden" id="diagnose">
+        <h2>Hacer diagnóstico</h2>
+        <div class="upload-panel">
+          <div id="dropZone" class="drop-zone">
+            <p>Arrastra o haz clic para subir una imagen</p>
+            <input type="file" id="imageInput" accept="image/*">
+            <img id="preview" src="" alt="" class="preview hidden">
+          </div>
+
+          <div class="controls">
+            <button id="btnPredict" class="primary" disabled>Analizar imagen</button>
+            <div id="resultBox" class="result-box hidden">
+              <h3>Resultado</h3>
+              <p id="predClass">Clase: -</p>
+              <p id="predConfidence">Confianza: -</p>
+              <canvas id="probChart" width="400" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RESULTS -->
+      <section class="view hidden" id="results">
+        <h2>Resultados (ver gráfico por ID)</h2>
+        <div class="form-inline">
+          <label for="queryId">ID del examen:</label>
+          <input id="queryId" placeholder="ej: 1">
+          <button id="btnLoadId" class="secondary">Cargar</button>
+        </div>
+
+        <div id="resultForId" class="hidden">
+          <h3>Resultados del examen <span id="showId"></span></h3>
+          <canvas id="probChartId" width="600" height="300"></canvas>
+        </div>
+
+        <hr>
+
+        <h3>Gráficas agregadas (todos los exámenes)</h3>
+        <div class="charts">
+          <div class="chart-card">
+            <h4>Distribución de clases</h4>
+            <canvas id="classDist" width="400" height="250"></canvas>
+          </div>
+          <div class="chart-card">
+            <h4>Evolución de confianza</h4>
+            <canvas id="confidenceLine" width="400" height="250"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- HISTORY -->
+      <section class="view hidden" id="history">
+        <h2>Historial de diagnósticos</h2>
+        <table id="historyTable" class="history-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Fecha</th>
+              <th>Clase</th>
+              <th>Confianza (%)</th>
+              <th>Ver</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <script src="{% static 'diagnostics/js/app.js' %}"></script>
+</body>
+</html>

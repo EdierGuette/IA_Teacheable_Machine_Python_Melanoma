@@ -1,0 +1,3 @@
+0 Maligno
+1 Benigno
+2 Desconocido

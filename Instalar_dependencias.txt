@@ -1,0 +1,20 @@
+#Instalar dependencias
+pip install -r requirements.txt
+
+
+#Activar entorno Virtual
+.\venv\Scripts\Activate
+Deberías ver algo como (venv) al inicio de la línea de comandos.
+
+#Migraciones de Django
+python manage.py makemigrations
+python manage.py migrate
+
+
+#Levantar el servidor de Django
+python manage.py runserver
+
+#Vista del puerto:
+Django version 4.2, using settings 'skin_cancer_dashboard.settings'
+Starting development server at http://127.0.0.1:8000/
+
