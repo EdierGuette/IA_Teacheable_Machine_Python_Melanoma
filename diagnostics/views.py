@@ -33,6 +33,40 @@ except Exception as e:
 def index(request):
     return render(request, 'diagnostics/index.html', context={})
 
+def get_confidence_display(confidence_percentage):
+    """Convierte porcentaje a nivel de semáforo y rango aproximado"""
+    # Redondea al múltiplo de 5 más cercano
+    rounded_confidence = round(confidence_percentage / 5) * 5
+    
+    if confidence_percentage >= 80:
+        return "🟢 Bajo riesgo", f"≈ {rounded_confidence}%"
+    elif confidence_percentage >= 50:
+        return "🟡 Riesgo intermedio", f"≈ {rounded_confidence}%"
+    else:
+        return "🔴 Alto riesgo", f"≈ {rounded_confidence}%"
+
+def get_user_friendly_class_name(full_class_name):
+    """Convierte nombres técnicos a nombres comprensibles para el usuario"""
+    if "Maligno" in full_class_name:
+        return "Maligno (sospecha de melanoma)"
+    elif "Benigno" in full_class_name:
+        return "Benigno (no peligroso)"
+    elif "Indeterminado" in full_class_name or "Desconocido" in full_class_name:
+        return "Indeterminado (evaluación médica recomendada)"
+    else:
+        return full_class_name
+
+def get_simplified_class_name(full_class_name):
+    """Extrae solo la parte principal del nombre de la clase para gráficos"""
+    if "Maligno" in full_class_name:
+        return "Maligno"
+    elif "Benigno" in full_class_name:
+        return "Benigno"
+    elif "Indeterminado" in full_class_name or "Desconocido" in full_class_name:
+        return "Indeterminado"
+    else:
+        return full_class_name
+
 @csrf_exempt
 def api_predict(request):
     """
@@ -42,8 +76,11 @@ def api_predict(request):
     {
       "probabilities": [0.1, 0.9, ...],
       "predicted_index": 1,
-      "predicted_class": "Benigno",
-      "confidence": 87.2
+      "predicted_class": "Benigno (no peligroso)",
+      "simplified_class": "Benigno",
+      "confidence": 87.2,
+      "confidence_level": "🟢 Bajo riesgo",
+      "confidence_range": "≈ 85%"
     }
     """
     if request.method != 'POST':
@@ -73,15 +110,25 @@ def api_predict(request):
         prediction = model.predict(data)
         probs = prediction[0].tolist()
         index = int(np.argmax(prediction[0]))
-        # class_names may include numbering; return raw string
-        predicted_class = class_names[index] if index < len(class_names) else f"Clase {index}"
+        
+        # Obtener nombre original y convertirlo a formato amigable
+        original_class_name = class_names[index] if index < len(class_names) else f"Clase {index}"
+        user_friendly_class = get_user_friendly_class_name(original_class_name)
+        simplified_class = get_simplified_class_name(original_class_name)
+        
         confidence = float(prediction[0][index]) * 100.0  # porcentaje 0-100
+        
+        # Calcular nivel de confianza y rango
+        confidence_level, confidence_range = get_confidence_display(confidence)
 
         return JsonResponse({
             'probabilities': probs,
             'predicted_index': index,
-            'predicted_class': predicted_class,
+            'predicted_class': user_friendly_class,
+            'simplified_class': simplified_class,
             'confidence': round(confidence, 2),
+            'confidence_level': confidence_level,
+            'confidence_range': confidence_range
         })
 
     except Exception as e:

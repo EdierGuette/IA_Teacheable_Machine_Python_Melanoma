@@ -1,3 +1,3 @@
-0 Maligno
-1 Benigno
-2 Desconocido
+0 Maligno (sospecha de melanoma)
+1 Benigno (no peligroso)
+2 Indeterminado (evaluación médica recomendada)

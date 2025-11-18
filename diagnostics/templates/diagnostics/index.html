@@ -58,10 +58,12 @@
           <div class="controls">
             <button id="btnPredict" class="primary" disabled>Analizar imagen</button>
             <div id="resultBox" class="result-box hidden">
-              <h3>Resultado</h3>
-              <p id="predClass">Clase: -</p>
-              <p id="predConfidence">Confianza: -</p>
-              <canvas id="probChart" width="400" height="200"></canvas>
+              <h3>Resultado del Análisis</h3>
+              <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <p id="predClass" style="font-size: 1.3em; font-weight: bold; margin-bottom: 10px;">-</p>
+                <p id="predConfidence" style="font-size: 1.1em; margin: 0;">-</p>
+              </div>
+              <canvas id="probChart" width="400" height="300"></canvas>
             </div>
           </div>
         </div>
@@ -86,11 +88,11 @@
         <h3>Gráficas agregadas (todos los exámenes)</h3>
         <div class="charts">
           <div class="chart-card">
-            <h4>Distribución de clases</h4>
+            <h4>Distribución de diagnósticos</h4>
             <canvas id="classDist" width="400" height="250"></canvas>
           </div>
           <div class="chart-card">
-            <h4>Evolución de confianza</h4>
+            <h4>Evolución del nivel de riesgo</h4>
             <canvas id="confidenceLine" width="400" height="250"></canvas>
           </div>
         </div>
@@ -104,8 +106,8 @@
             <tr>
               <th>ID</th>
               <th>Fecha</th>
-              <th>Clase</th>
-              <th>Confianza (%)</th>
+              <th>Diagnóstico</th>
+              <th>Nivel de Riesgo</th>
               <th>Ver</th>
             </tr>
           </thead>
