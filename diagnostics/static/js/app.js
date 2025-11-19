@@ -1,4 +1,4 @@
-// App JS: maneja autenticación, vistas, uploads, llamadas al backend
+// Dashboard JS: maneja solo el dashboard
 (() => {
   // helpers mejorados con verificación
   const qs = s => {
@@ -18,19 +18,17 @@
   let classDistChart = null;
   let confidenceLineChart = null;
 
-  // Inicializar aplicación
-  function initApp() {
-    console.log('🚀 Iniciando aplicación...');
+  // Inicializar aplicación del dashboard
+  function initDashboard() {
+    console.log('🚀 Iniciando dashboard...');
 
-    if (token) {
-      console.log('🔑 Token encontrado, verificando...');
-      verifyToken();
-    } else {
-      console.log('🔑 No hay token, mostrando login');
-      showAuthView();
+    if (!token) {
+      console.log('🔑 No hay token, redirigiendo al login...');
+      window.location.href = '/';
+      return;
     }
 
-    setupEventListeners();
+    verifyToken();
   }
 
   // Verificar token
@@ -47,56 +45,23 @@
         const userData = await response.json();
         currentUser = userData;
         console.log('✅ Token válido, usuario:', currentUser.email);
-        showDashboardView();
+        setupDashboard();
       } else {
-        console.warn('❌ Token inválido, limpiando...');
+        console.warn('❌ Token inválido, redirigiendo al login...');
         localStorage.removeItem('authToken');
-        token = null;
-        currentUser = null;
-        showAuthView();
+        window.location.href = '/';
       }
     } catch (error) {
       console.error('❌ Error verificando token:', error);
       localStorage.removeItem('authToken');
-      token = null;
-      currentUser = null;
-      showAuthView();
+      window.location.href = '/';
     }
   }
 
-  // Mostrar vista de autenticación
-  function showAuthView() {
-    console.log('👤 Mostrando vista de autenticación');
-    const authView = qs('#authView');
-    const dashboardView = qs('#dashboardView');
-
-    if (authView) authView.classList.remove('hidden');
-    if (dashboardView) dashboardView.classList.add('hidden');
-
-    // Limpiar formularios
-    const loginForm = qs('#loginForm');
-    const registerForm = qs('#registerForm');
-    if (loginForm) loginForm.reset();
-    if (registerForm) registerForm.reset();
-  }
-
-  // Mostrar dashboard
-  function showDashboardView() {
-    console.log('📊 Mostrando dashboard');
-    const authView = qs('#authView');
-    const dashboardView = qs('#dashboardView');
-
-    if (authView) {
-      authView.classList.add('hidden');
-      console.log('✅ Auth view ocultado');
-    }
-    if (dashboardView) {
-      dashboardView.classList.remove('hidden');
-      console.log('✅ Dashboard view mostrado');
-    }
-
+  // Configurar dashboard
+  function setupDashboard() {
     updateUserInfo();
-    initializeDashboard();
+    setupDashboardEvents();
   }
 
   // Actualizar información del usuario
@@ -116,184 +81,6 @@
       if (userAvatar) {
         userAvatar.textContent = `${currentUser.first_name[0]}${currentUser.last_name[0]}`;
       }
-    }
-  }
-
-  // Inicializar dashboard
-  function initializeDashboard() {
-    console.log('🔄 Inicializando dashboard...');
-    setTimeout(() => {
-      setupDashboardEvents();
-    }, 100);
-  }
-
-  // Configurar event listeners
-  function setupEventListeners() {
-    console.log('🎯 Configurando event listeners...');
-
-    // Tabs de autenticación
-    const authTabs = qsa('.auth-tab');
-    const authForms = qsa('.auth-form');
-    const authMessage = qs('#authMessage');
-
-    authTabs.forEach(tab => {
-      tab.addEventListener('click', () => {
-        const tabName = tab.dataset.tab;
-        console.log('📌 Cambiando tab:', tabName);
-
-        authTabs.forEach(t => t.classList.remove('active'));
-        authForms.forEach(f => f.classList.remove('active'));
-
-        tab.classList.add('active');
-        const targetForm = qs(`#${tabName}Form`);
-        if (targetForm) targetForm.classList.add('active');
-
-        if (authMessage) authMessage.textContent = '';
-      });
-    });
-
-    // Formulario de login
-    const loginForm = qs('#loginForm');
-    if (loginForm) {
-      loginForm.addEventListener('submit', handleLogin);
-    }
-
-    // Formulario de registro
-    const registerForm = qs('#registerForm');
-    if (registerForm) {
-      registerForm.addEventListener('submit', handleRegister);
-    }
-
-    // Logout
-    const logoutBtn = qs('#logoutBtn');
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', handleLogout);
-    }
-  }
-
-  // Manejar login
-  async function handleLogin(e) {
-    e.preventDefault();
-    console.log('🔐 Procesando login...');
-
-    const email = qs('#loginEmail')?.value;
-    const password = qs('#loginPassword')?.value;
-
-    if (!email || !password) {
-      showMessage('Por favor complete todos los campos', 'error');
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/auth/login/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email, password })
-      });
-
-      const data = await response.json();
-
-      // DEBUG: Verificar la respuesta del servidor
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response data:', data);
-
-      if (response.ok) {
-        console.log('✅ Login exitoso en backend');
-        token = data.access_token;
-        localStorage.setItem('authToken', token);
-        currentUser = data.user;
-        console.log('✅ Login exitoso:', currentUser.email);
-
-        // PRIMERO mostrar el dashboard y LUEGO el mensaje
-        showDashboardView();
-
-        // Pequeño delay para asegurar que el dashboard se muestre
-        setTimeout(() => {
-          showMessage('Login exitoso', 'success');
-        }, 100);
-
-      } else {
-        console.error('❌ Error en login:', data);
-        showMessage(data.error || 'Error en el login', 'error');
-      }
-    } catch (error) {
-      console.error('❌ Error de conexión:', error);
-      showMessage('Error de conexión', 'error');
-    }
-  }
-
-  // Manejar registro
-  async function handleRegister(e) {
-    e.preventDefault();
-    console.log('📝 Procesando registro...');
-
-    const formData = {
-      first_name: qs('#regFirstName')?.value,
-      last_name: qs('#regLastName')?.value,
-      email: qs('#regEmail')?.value,
-      identification_number: qs('#regIdentification')?.value,
-      gender: qs('#regGender')?.value,
-      phone: qs('#regPhone')?.value,
-      date_of_birth: qs('#regBirthDate')?.value,
-      password: qs('#regPassword')?.value,
-      password_confirmation: qs('#regPasswordConfirm')?.value
-    };
-
-    // Validar campos requeridos
-    for (const [key, value] of Object.entries(formData)) {
-      if (!value) {
-        showMessage(`Por favor complete el campo: ${key}`, 'error');
-        return;
-      }
-    }
-
-    try {
-      const response = await fetch('/api/auth/register/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        token = data.access_token;
-        localStorage.setItem('authToken', token);
-        currentUser = data.user;
-        console.log('✅ Registro exitoso:', currentUser.email);
-        showDashboardView();
-        showMessage('Registro exitoso', 'success');
-      } else {
-        console.error('❌ Error en registro:', data);
-        const errors = Object.values(data).flat().join(', ');
-        showMessage(errors || 'Error en el registro', 'error');
-      }
-    } catch (error) {
-      console.error('❌ Error de conexión:', error);
-      showMessage('Error de conexión', 'error');
-    }
-  }
-
-  // Manejar logout
-  function handleLogout() {
-    console.log('🚪 Cerrando sesión...');
-    localStorage.removeItem('authToken');
-    token = null;
-    currentUser = null;
-    showAuthView();
-    showMessage('Sesión cerrada', 'success');
-  }
-
-  // Mostrar mensajes
-  function showMessage(message, type) {
-    const authMessage = qs('#authMessage');
-    if (authMessage) {
-      authMessage.textContent = message;
-      authMessage.className = `auth-message ${type}`;
     }
   }
 
@@ -367,11 +154,24 @@
       });
     }
 
+    // Configurar logout
+    const logoutBtn = qs('#logoutBtn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', handleLogout);
+    }
+
     // Mostrar vista por defecto
     showView('home');
 
     // Configurar sistema de archivos
     setupFileUpload();
+  }
+
+  // Manejar logout
+  function handleLogout() {
+    console.log('🚪 Cerrando sesión...');
+    localStorage.removeItem('authToken');
+    window.location.href = '/';
   }
 
   // Inicializar vista de diagnóstico
@@ -930,10 +730,10 @@
     });
   }
 
-  // Inicializar la aplicación cuando el DOM esté listo
+  // Inicializar el dashboard cuando el DOM esté listo
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initApp);
+    document.addEventListener('DOMContentLoaded', initDashboard);
   } else {
-    initApp();
+    initDashboard();
   }
 })();

@@ -1,0 +1,116 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SkinCare AI — Login</title>
+  <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+  <!-- Solo Pantalla de Login -->
+  <div class="auth-view" id="authView">
+    <div class="auth-container">
+      <div class="auth-card">
+        <div class="brand-large">SkinCare <span>AI</span></div>
+        
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-tab="login">Iniciar Sesión</button>
+          <button class="auth-tab" data-tab="register">Registrarse</button>
+        </div>
+
+        <!-- Formulario Login -->
+        <form id="loginForm" class="auth-form active">
+          <div class="form-group">
+            <label for="loginEmail">Correo electrónico</label>
+            <input type="email" id="loginEmail" required placeholder="tu@email.com">
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">Contraseña</label>
+            <input type="password" id="loginPassword" required placeholder="••••••••">
+          </div>
+          <button type="submit" class="primary full-width">Ingresar</button>
+        </form>
+
+        <!-- Formulario Registro -->
+        <form id="registerForm" class="auth-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="regFirstName">Nombre</label>
+              <input type="text" id="regFirstName" required placeholder="Juan">
+            </div>
+            <div class="form-group">
+              <label for="regLastName">Apellido</label>
+              <input type="text" id="regLastName" required placeholder="Pérez">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="regEmail">Correo electrónico</label>
+            <input type="email" id="regEmail" required placeholder="juan.perez@ejemplo.com">
+          </div>
+          
+          <div class="form-group">
+            <label for="regIdentification">Número de identificación</label>
+            <input type="text" id="regIdentification" required placeholder="123456789">
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="regGender">Sexo</label>
+              <select id="regGender" required>
+                <option value="">Seleccionar</option>
+                <option value="Masculino">Masculino</option>
+                <option value="Femenino">Femenino</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="regPhone">Teléfono</label>
+              <input type="tel" id="regPhone" required placeholder="+57 300 123 4567">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="regBirthDate">Fecha de nacimiento</label>
+            <input type="date" id="regBirthDate" required>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="regPassword">Contraseña</label>
+              <input type="password" id="regPassword" required placeholder="••••••••">
+            </div>
+            <div class="form-group">
+              <label for="regPasswordConfirm">Confirmar contraseña</label>
+              <input type="password" id="regPasswordConfirm" required placeholder="••••••••">
+            </div>
+          </div>
+          
+          <button type="submit" class="primary full-width">Registrarse</button>
+        </form>
+
+        <div id="authMessage" class="auth-message"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="{% static 'js/login.js' %}"></script>
+  
+  <script>
+    // Mejorar la experiencia de fecha en el formulario de registro
+    document.addEventListener('DOMContentLoaded', function() {
+      const birthDateInput = document.getElementById('regBirthDate');
+      if (birthDateInput) {
+        const today = new Date();
+        const minDate = new Date();
+        minDate.setFullYear(today.getFullYear() - 100);
+        
+        birthDateInput.max = today.toISOString().split('T')[0];
+        birthDateInput.min = minDate.toISOString().split('T')[0];
+      }
+    });
+  </script>
+</body>
+</html>
