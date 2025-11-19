@@ -97,7 +97,7 @@ AUTH_USER_MODEL = 'users.User'
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'diagnostics' / 'static',
-    BASE_DIR / 'diagnostics',  # Añadir esta línea
+    # BASE_DIR / 'diagnostics',  # Añadir esta línea
 ]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 

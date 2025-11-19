@@ -18,13 +18,6 @@
   let classDistChart = null;
   let confidenceLineChart = null;
 
-  // Elementos de autenticación
-  const authView = qs('#authView');
-  const dashboardView = qs('#dashboardView');
-  const authTabs = qsa('.auth-tab');
-  const authForms = qsa('.auth-form');
-  const authMessage = qs('#authMessage');
-
   // Inicializar aplicación
   function initApp() {
     console.log('🚀 Iniciando aplicación...');
@@ -74,15 +67,34 @@
   // Mostrar vista de autenticación
   function showAuthView() {
     console.log('👤 Mostrando vista de autenticación');
+    const authView = qs('#authView');
+    const dashboardView = qs('#dashboardView');
+
     if (authView) authView.classList.remove('hidden');
     if (dashboardView) dashboardView.classList.add('hidden');
+
+    // Limpiar formularios
+    const loginForm = qs('#loginForm');
+    const registerForm = qs('#registerForm');
+    if (loginForm) loginForm.reset();
+    if (registerForm) registerForm.reset();
   }
 
   // Mostrar dashboard
   function showDashboardView() {
     console.log('📊 Mostrando dashboard');
-    if (authView) authView.classList.add('hidden');
-    if (dashboardView) dashboardView.classList.remove('hidden');
+    const authView = qs('#authView');
+    const dashboardView = qs('#dashboardView');
+
+    if (authView) {
+      authView.classList.add('hidden');
+      console.log('✅ Auth view ocultado');
+    }
+    if (dashboardView) {
+      dashboardView.classList.remove('hidden');
+      console.log('✅ Dashboard view mostrado');
+    }
+
     updateUserInfo();
     initializeDashboard();
   }
@@ -110,7 +122,6 @@
   // Inicializar dashboard
   function initializeDashboard() {
     console.log('🔄 Inicializando dashboard...');
-    // Pequeño delay para asegurar que el DOM esté listo
     setTimeout(() => {
       setupDashboardEvents();
     }, 100);
@@ -121,6 +132,10 @@
     console.log('🎯 Configurando event listeners...');
 
     // Tabs de autenticación
+    const authTabs = qsa('.auth-tab');
+    const authForms = qsa('.auth-form');
+    const authMessage = qs('#authMessage');
+
     authTabs.forEach(tab => {
       tab.addEventListener('click', () => {
         const tabName = tab.dataset.tab;
@@ -180,13 +195,25 @@
 
       const data = await response.json();
 
+      // DEBUG: Verificar la respuesta del servidor
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response data:', data);
+
       if (response.ok) {
+        console.log('✅ Login exitoso en backend');
         token = data.access_token;
         localStorage.setItem('authToken', token);
         currentUser = data.user;
         console.log('✅ Login exitoso:', currentUser.email);
+
+        // PRIMERO mostrar el dashboard y LUEGO el mensaje
         showDashboardView();
-        showMessage('Login exitoso', 'success');
+
+        // Pequeño delay para asegurar que el dashboard se muestre
+        setTimeout(() => {
+          showMessage('Login exitoso', 'success');
+        }, 100);
+
       } else {
         console.error('❌ Error en login:', data);
         showMessage(data.error || 'Error en el login', 'error');
@@ -263,6 +290,7 @@
 
   // Mostrar mensajes
   function showMessage(message, type) {
+    const authMessage = qs('#authMessage');
     if (authMessage) {
       authMessage.textContent = message;
       authMessage.className = `auth-message ${type}`;
@@ -273,34 +301,29 @@
   function setupDashboardEvents() {
     console.log('🎯 Configurando eventos del dashboard...');
 
-    // Verificar elementos críticos
-    const criticalElements = {
-      views: qsa('.view'),
-      menuBtns: qsa('.menu-btn'),
-      btnPredict: qs('#btnPredict'),
-      dropZone: qs('#dropZone'),
-      fileInput: qs('#imageInput')
-    };
-
-    console.log('🔍 Elementos del dashboard:', criticalElements);
+    const views = qsa('.view');
+    const menuBtns = qsa('.menu-btn');
 
     // Función para mostrar vistas
     function showView(id) {
       console.log('👀 Mostrando vista:', id);
 
-      criticalElements.views.forEach(v => {
-        if (v.id === id) {
-          v.classList.remove('hidden');
-        } else {
-          v.classList.add('hidden');
-        }
+      // Ocultar todas las vistas primero
+      views.forEach(v => {
+        v.classList.add('hidden');
       });
 
-      criticalElements.menuBtns.forEach(b => {
+      // Mostrar la vista seleccionada
+      const targetView = qs(`#${id}`);
+      if (targetView) {
+        targetView.classList.remove('hidden');
+      }
+
+      // Actualizar botones del menú
+      menuBtns.forEach(b => {
+        b.classList.remove('active');
         if (b.dataset.view === id) {
           b.classList.add('active');
-        } else {
-          b.classList.remove('active');
         }
       });
 
@@ -320,14 +343,29 @@
     }
 
     // Configurar botones del menú
-    criticalElements.menuBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
+    menuBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
         const viewId = btn.dataset.view;
-        if (viewId) {
+        console.log('🖱️ Botón clickeado:', viewId);
+
+        if (viewId && !btn.disabled) {
           showView(viewId);
         }
       });
     });
+
+    // Configurar botón de carga por ID
+    const btnLoadId = qs('#btnLoadId');
+    if (btnLoadId) {
+      btnLoadId.addEventListener('click', async () => {
+        const queryId = qs('#queryId').value;
+        if (queryId) {
+          await loadDiagnosticDetail(queryId);
+          showView('results');
+        }
+      });
+    }
 
     // Mostrar vista por defecto
     showView('home');
