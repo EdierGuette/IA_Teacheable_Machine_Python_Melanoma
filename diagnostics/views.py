@@ -1,14 +1,20 @@
 import io
 import json
 import os
+import base64
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 # imports para modelo
 from PIL import Image, ImageOps
 import numpy as np
 from keras.models import load_model
+from .models import DiagnosticHistory
+from users.models import User
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -35,7 +41,6 @@ def index(request):
 
 def get_confidence_display(confidence_percentage):
     """Convierte porcentaje a nivel de semáforo y rango aproximado"""
-    # Redondea al múltiplo de 5 más cercano
     rounded_confidence = round(confidence_percentage / 5) * 5
     
     if confidence_percentage >= 80:
@@ -67,32 +72,23 @@ def get_simplified_class_name(full_class_name):
     else:
         return full_class_name
 
-@csrf_exempt
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def api_predict(request):
+    print(f"🔍 Predict llamado por: {request.user.email}")
+    print(f"🔍 Headers de autorización: {request.headers.get('Authorization')}")
+    print(f"🔍 Usuario autenticado: {request.user.is_authenticated}")
     """
     Endpoint: POST /api/predict/
     Form data: file field named 'image'
-    Response JSON:
-    {
-      "probabilities": [0.1, 0.9, ...],
-      "predicted_index": 1,
-      "predicted_class": "Benigno (no peligroso)",
-      "simplified_class": "Benigno",
-      "confidence": 87.2,
-      "confidence_level": "🟢 Bajo riesgo",
-      "confidence_range": "≈ 85%"
-    }
     """
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
-
     if model is None:
-        return JsonResponse({'error': 'Modelo no cargado en el servidor'}, status=500)
+        return Response({'error': 'Modelo no cargado en el servidor'}, status=500)
 
     # obtener archivo
     image_file = request.FILES.get('image')
     if image_file is None:
-        return JsonResponse({'error': 'No file provided'}, status=400)
+        return Response({'error': 'No file provided'}, status=400)
 
     try:
         # Leer imagen en PIL
@@ -116,12 +112,29 @@ def api_predict(request):
         user_friendly_class = get_user_friendly_class_name(original_class_name)
         simplified_class = get_simplified_class_name(original_class_name)
         
-        confidence = float(prediction[0][index]) * 100.0  # porcentaje 0-100
+        confidence = float(prediction[0][index]) * 100.0
         
         # Calcular nivel de confianza y rango
         confidence_level, confidence_range = get_confidence_display(confidence)
 
-        return JsonResponse({
+        # Convertir imagen a base64 para guardar
+        buffered = io.BytesIO()
+        image.save(buffered, format="JPEG")
+        img_str = base64.b64encode(buffered.getvalue()).decode()
+
+        # Guardar en base de datos
+        diagnostic = DiagnosticHistory.objects.create(
+            user=request.user,
+            patient_name=request.user.full_name,
+            identification_number=request.user.identification_number,
+            diagnosis=user_friendly_class,
+            risk_level=confidence,
+            probabilities=probs,
+            image_data=img_str
+        )
+
+        return Response({
+            'id': str(diagnostic.id),
             'probabilities': probs,
             'predicted_index': index,
             'predicted_class': user_friendly_class,
@@ -132,4 +145,51 @@ def api_predict(request):
         })
 
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return Response({'error': str(e)}, status=500)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def diagnostic_history(request):
+    """Obtener historial de diagnósticos según el rol"""
+    if request.user.role == 'doctor':
+        # Médicos ven todos los diagnósticos
+        diagnostics = DiagnosticHistory.objects.all().order_by('-diagnosis_date')
+    else:
+        # Pacientes solo ven sus diagnósticos
+        diagnostics = DiagnosticHistory.objects.filter(user=request.user).order_by('-diagnosis_date')
+    
+    data = []
+    for diagnostic in diagnostics:
+        data.append({
+            'id': str(diagnostic.id),
+            'patient_name': diagnostic.patient_name,
+            'identification_number': diagnostic.identification_number,
+            'date': diagnostic.diagnosis_date.strftime('%d/%m/%Y, %H:%M:%S'),
+            'diagnosis': diagnostic.diagnosis,
+            'risk_level': float(diagnostic.risk_level),
+        })
+    
+    return Response(data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def diagnostic_detail(request, diagnostic_id):
+    """Obtener detalle de un diagnóstico específico"""
+    try:
+        if request.user.role == 'doctor':
+            diagnostic = DiagnosticHistory.objects.get(id=diagnostic_id)
+        else:
+            diagnostic = DiagnosticHistory.objects.get(id=diagnostic_id, user=request.user)
+        
+        return Response({
+            'id': str(diagnostic.id),
+            'patient_name': diagnostic.patient_name,
+            'identification_number': diagnostic.identification_number,
+            'date': diagnostic.diagnosis_date.strftime('%d/%m/%Y, %H:%M:%S'),
+            'diagnosis': diagnostic.diagnosis,
+            'risk_level': float(diagnostic.risk_level),
+            'probabilities': diagnostic.probabilities,
+            'image_data': diagnostic.image_data
+        })
+    except DiagnosticHistory.DoesNotExist:
+        return Response({'error': 'Diagnóstico no encontrado'}, status=404)

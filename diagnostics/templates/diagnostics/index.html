@@ -1,122 +1,308 @@
 {% load static %}
-
 <!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>SkinCare AI — Dashboard</title>
-  <link rel="icon" href="{% static 'diagnostics/img/favicon.ico' %}" type="image/x-icon">
-  <link rel="stylesheet" href="{% static 'diagnostics/css/style.css' %}">
+  <link rel="icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <div class="app">
-    <aside class="sidebar">
-      <div class="brand">SkinCare <span>AI</span></div>
-      <nav class="menu">
-        <button class="menu-btn active" data-view="home">Inicio</button>
-        <button class="menu-btn" data-view="diagnose">Hacer diagnóstico</button>
-        <button class="menu-btn" data-view="results" id="resultsBtn">Resultados</button>
-        <button class="menu-btn" data-view="history">Historial</button>
-      </nav>
-      <footer class="sidebar-footer">Versión demo · Local</footer>
-    </aside>
-
-    <main class="main">
-      <!-- HOME -->
-      <section class="view" id="home">
-        <h1>Bienvenido a SkinCare AI</h1>
-        <p class="lead">Plataforma demo para clasificación de lesiones cutáneas basada en un modelo de Teachable Machine.</p>
-
-        <div class="cards">
-          <div class="card">
-            <h3>Qué es el cáncer de piel</h3>
-            <p>El cáncer de piel es el crecimiento anormal de células en la piel. Tipos comunes: carcinoma basocelular, carcinoma escamocelular y melanoma.</p>
+  <div class="app" id="app">
+    <!-- Pantalla de Login -->
+    <div class="auth-view" id="authView">
+      <div class="auth-container">
+        <div class="auth-card">
+          <div class="brand-large">SkinCare <span>AI</span></div>
+          
+          <div class="auth-tabs">
+            <button class="auth-tab active" data-tab="login">Iniciar Sesión</button>
+            <button class="auth-tab" data-tab="register">Registrarse</button>
           </div>
-          <div class="card">
-            <h3>Prevención</h3>
-            <ul>
-              <li>Usar protector solar (SPF 30+)</li>
-              <li>Evitar exposición directa entre 10 a.m. y 4 p.m.</li>
-              <li>Revisar cambios en lunares</li>
-            </ul>
+
+          <!-- Formulario Login -->
+          <form id="loginForm" class="auth-form active">
+            <div class="form-group">
+              <label for="loginEmail">Correo electrónico</label>
+              <input type="email" id="loginEmail" required placeholder="tu@email.com">
+            </div>
+            <div class="form-group">
+              <label for="loginPassword">Contraseña</label>
+              <input type="password" id="loginPassword" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="primary full-width">Ingresar</button>
+          </form>
+
+          <!-- Formulario Registro -->
+          <form id="registerForm" class="auth-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="regFirstName">Nombre</label>
+                <input type="text" id="regFirstName" required placeholder="Juan">
+              </div>
+              <div class="form-group">
+                <label for="regLastName">Apellido</label>
+                <input type="text" id="regLastName" required placeholder="Pérez">
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="regEmail">Correo electrónico</label>
+              <input type="email" id="regEmail" required placeholder="juan.perez@ejemplo.com">
+            </div>
+            
+            <div class="form-group">
+              <label for="regIdentification">Número de identificación</label>
+              <input type="text" id="regIdentification" required placeholder="123456789">
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="regGender">Sexo</label>
+                <select id="regGender" required>
+                  <option value="">Seleccionar</option>
+                  <option value="Masculino">Masculino</option>
+                  <option value="Femenino">Femenino</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="regPhone">Teléfono</label>
+                <input type="tel" id="regPhone" required placeholder="+57 300 123 4567">
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="regBirthDate">Fecha de nacimiento</label>
+              <input type="date" id="regBirthDate" required>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="regPassword">Contraseña</label>
+                <input type="password" id="regPassword" required placeholder="••••••••">
+              </div>
+              <div class="form-group">
+                <label for="regPasswordConfirm">Confirmar contraseña</label>
+                <input type="password" id="regPasswordConfirm" required placeholder="••••••••">
+              </div>
+            </div>
+            
+            <button type="submit" class="primary full-width">Registrarse</button>
+          </form>
+
+          <div id="authMessage" class="auth-message"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard Principal (oculto inicialmente) -->
+    <div class="dashboard-view hidden" id="dashboardView">
+      <aside class="sidebar">
+        <div class="brand">SkinCare <span>AI</span></div>
+        
+        <!-- Información del Usuario -->
+        <div class="user-info">
+          <div class="user-avatar" id="userAvatar">US</div>
+          <div class="user-details">
+            <strong id="userName">Usuario</strong>
+            <span id="userRole" class="user-role">Paciente</span>
           </div>
         </div>
-      </section>
+        
+        <nav class="menu">
+          <button class="menu-btn active" data-view="home">Inicio</button>
+          <button class="menu-btn" data-view="diagnose">Hacer diagnóstico</button>
+          <button class="menu-btn" id="resultsBtn" data-view="results" disabled>Resultados</button>
+          <button class="menu-btn" data-view="history">Historial</button>
+        </nav>
+        
+        <footer class="sidebar-footer">
+          <button id="logoutBtn" class="secondary small">Cerrar Sesión</button>
+        </footer>
+      </aside>
 
-      <!-- DIAGNOSE -->
-      <section class="view hidden" id="diagnose">
-        <h2>Hacer diagnóstico</h2>
-        <div class="upload-panel">
-          <div id="dropZone" class="drop-zone">
-            <p>Arrastra o haz clic para subir una imagen</p>
-            <input type="file" id="imageInput" accept="image/*">
-            <img id="preview" src="" alt="" class="preview hidden">
-          </div>
+      <main class="main">
+        <!-- VISTA INICIO -->
+        <section class="view" id="home">
+          <h1>Bienvenido a SkinCare AI</h1>
+          <p class="lead">Plataforma para clasificación de lesiones cutáneas basada en inteligencia artificial.</p>
 
-          <div class="controls">
-            <button id="btnPredict" class="primary" disabled>Analizar imagen</button>
-            <div id="resultBox" class="result-box hidden">
-              <h3>Resultado del Análisis</h3>
-              <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                <p id="predClass" style="font-size: 1.3em; font-weight: bold; margin-bottom: 10px;">-</p>
-                <p id="predConfidence" style="font-size: 1.1em; margin: 0;">-</p>
-              </div>
-              <canvas id="probChart" width="400" height="300"></canvas>
+          <div class="cards">
+            <div class="card">
+              <h3>¿Qué es el cáncer de piel?</h3>
+              <p>El cáncer de piel es el crecimiento anormal de células en la piel. Tipos comunes: carcinoma basocelular, carcinoma escamocelular y melanoma.</p>
+            </div>
+            <div class="card">
+              <h3>Prevención</h3>
+              <ul>
+                <li>Usar protector solar (SPF 30+)</li>
+                <li>Evitar exposición directa entre 10 a.m. y 4 p.m.</li>
+                <li>Revisar cambios en lunares regularmente</li>
+                <li>Usar ropa protectora y sombrero</li>
+              </ul>
             </div>
           </div>
-        </div>
-      </section>
 
-      <!-- RESULTS -->
-      <section class="view hidden" id="results">
-        <h2>Resultados (ver gráfico por ID)</h2>
-        <div class="form-inline">
-          <label for="queryId">ID del examen:</label>
-          <input id="queryId" placeholder="ej: 1">
-          <button id="btnLoadId" class="secondary">Cargar</button>
-        </div>
-
-        <div id="resultForId" class="hidden">
-          <h3>Resultados del examen <span id="showId"></span></h3>
-          <canvas id="probChartId" width="600" height="300"></canvas>
-        </div>
-
-        <hr>
-
-        <h3>Gráficas agregadas (todos los exámenes)</h3>
-        <div class="charts">
-          <div class="chart-card">
-            <h4>Distribución de diagnósticos</h4>
-            <canvas id="classDist" width="400" height="250"></canvas>
+          <div class="card" style="margin-top: 20px;">
+            <h3>¿Cómo funciona nuestro sistema?</h3>
+            <p>Nuestra inteligencia artificial analiza imágenes de lesiones cutáneas y proporciona una evaluación preliminar. <strong>Este es un sistema de apoyo al diagnóstico y no reemplaza la evaluación de un médico especialista.</strong></p>
           </div>
-          <div class="chart-card">
-            <h4>Evolución del nivel de riesgo</h4>
-            <canvas id="confidenceLine" width="400" height="250"></canvas>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- HISTORY -->
-      <section class="view hidden" id="history">
-        <h2>Historial de diagnósticos</h2>
-        <table id="historyTable" class="history-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Fecha</th>
-              <th>Diagnóstico</th>
-              <th>Nivel de Riesgo</th>
-              <th>Ver</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </section>
-    </main>
+        <!-- VISTA DIAGNÓSTICO -->
+        <section class="view hidden" id="diagnose">
+          <h2>Hacer diagnóstico</h2>
+          <p class="lead">Sube una imagen de una lesión cutánea para analizarla con nuestra IA.</p>
+
+          <div class="upload-panel">
+            <div id="dropZone" class="drop-zone">
+              <p>📁 Arrastra o haz clic para subir una imagen</p>
+              <p style="font-size: 12px; color: #666; margin-top: 8px;">
+                Formatos soportados: JPG, PNG, JPEG<br>
+                Tamaño máximo: 5MB
+              </p>
+              <input type="file" id="imageInput" accept="image/*">
+              <img id="preview" src="" alt="Vista previa" class="preview hidden">
+            </div>
+
+            <div class="controls">
+              <button id="btnPredict" class="primary" disabled>Analizar imagen</button>
+              
+              <div id="resultBox" class="result-box hidden">
+                <h3>🔍 Resultado del Análisis</h3>
+                <div style="background: var(--soft); padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid var(--accent);">
+                  <p id="predClass" style="font-size: 1.3em; font-weight: bold; margin-bottom: 10px; color: var(--accent);">-</p>
+                  <p id="predConfidence" style="font-size: 1.1em; margin: 0; color: var(--muted);">-</p>
+                </div>
+                <div style="text-align: center;">
+                  <h4>Probabilidades de Diagnóstico</h4>
+                  <canvas id="probChart" width="400" height="300"></canvas>
+                </div>
+                
+                <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
+                  <h4 style="margin-bottom: 10px;">📝 Nota importante</h4>
+                  <p style="margin: 0; font-size: 0.9em; color: #666;">
+                    <strong>Este es un sistema de apoyo al diagnóstico.</strong> Los resultados deben ser interpretados por un médico especialista. 
+                    Consulte siempre con un dermatólogo para un diagnóstico definitivo.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA RESULTADOS -->
+        <section class="view hidden" id="results">
+          <h2>📊 Resultados y Análisis</h2>
+          <p class="lead">Consulta resultados específicos por ID o visualiza estadísticas generales.</p>
+
+          <!-- Búsqueda por ID -->
+          <div class="card" style="margin-bottom: 20px;">
+            <h3>🔎 Buscar diagnóstico por ID</h3>
+            <div class="form-inline">
+              <label for="queryId">ID del examen:</label>
+              <input id="queryId" placeholder="Ej: a1b2c3d4" style="flex: 1;">
+              <button id="btnLoadId" class="secondary">Cargar</button>
+            </div>
+          </div>
+
+          <!-- Resultado específico -->
+          <div id="resultForId" class="hidden">
+            <div class="card">
+              <h3>📋 Resultados del examen <span id="showId" style="color: var(--accent);"></span></h3>
+              <div style="text-align: center; margin-top: 20px;">
+                <canvas id="probChartId" width="600" height="300"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+
+          <!-- Gráficos agregados -->
+          <h3>📈 Estadísticas Generales</h3>
+          <p class="lead">Análisis agregado de todos los diagnósticos realizados.</p>
+
+          <div class="charts">
+            <div class="chart-card">
+              <h4>📊 Distribución de Diagnósticos</h4>
+              <p style="font-size: 0.9em; color: #666; margin-bottom: 15px;">Proporción de tipos de diagnósticos realizados</p>
+              <canvas id="classDist" width="400" height="250"></canvas>
+            </div>
+            <div class="chart-card">
+              <h4>📈 Evolución del Nivel de Riesgo</h4>
+              <p style="font-size: 0.9em; color: #666; margin-bottom: 15px;">Tendencia temporal de los niveles de riesgo</p>
+              <canvas id="confidenceLine" width="400" height="250"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- VISTA HISTORIAL -->
+        <section class="view hidden" id="history">
+          <h2>📋 Historial de Diagnósticos</h2>
+          <p class="lead">Registro completo de todos los análisis realizados.</p>
+
+          <div id="historyTableContainer">
+            <table id="historyTable" class="history-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Paciente</th>
+                  <th>Identificación</th>
+                  <th>Fecha</th>
+                  <th>Diagnóstico</th>
+                  <th>Nivel de Riesgo</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Los datos se cargan dinámicamente -->
+                <tr>
+                  <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
+                    Cargando historial...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="margin-top: 20px; text-align: center;">
+            <button id="refreshHistory" class="secondary small">🔄 Actualizar Historial</button>
+          </div>
+        </section>
+      </main>
+    </div>
   </div>
 
-  <script src="{% static 'diagnostics/js/app.js' %}"></script>
+  <script src="{% static 'js/app.js' %}"></script>
+  
+  <!-- Script adicional para funcionalidades extra -->
+  <script>
+    // Configuración adicional para el botón de actualizar historial
+    document.addEventListener('DOMContentLoaded', function() {
+      const refreshBtn = document.getElementById('refreshHistory');
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+          if (typeof updateHistoryTable === 'function') {
+            updateHistoryTable();
+          }
+        });
+      }
+      
+      // Mejorar la experiencia de fecha en el formulario de registro
+      const birthDateInput = document.getElementById('regBirthDate');
+      if (birthDateInput) {
+        // Establecer fecha máxima (hoy) y mínima (100 años atrás)
+        const today = new Date();
+        const minDate = new Date();
+        minDate.setFullYear(today.getFullYear() - 100);
+        
+        birthDateInput.max = today.toISOString().split('T')[0];
+        birthDateInput.min = minDate.toISOString().split('T')[0];
+      }
+    });
+  </script>
 </body>
 </html>
