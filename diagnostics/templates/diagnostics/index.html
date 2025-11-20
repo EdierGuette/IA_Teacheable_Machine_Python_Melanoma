@@ -190,20 +190,5 @@
   </div>
 
   <script src="{% static 'js/app.js' %}"></script>
-  
-  <!-- Script adicional para funcionalidades extra -->
-  <script>
-    // Configuración adicional para el botón de actualizar historial
-    document.addEventListener('DOMContentLoaded', function() {
-      const refreshBtn = document.getElementById('refreshHistory');
-      if (refreshBtn) {
-        refreshBtn.addEventListener('click', function() {
-          if (typeof updateHistoryTable === 'function') {
-            updateHistoryTable();
-          }
-        });
-      }
-    });
-  </script>
 </body>
 </html>

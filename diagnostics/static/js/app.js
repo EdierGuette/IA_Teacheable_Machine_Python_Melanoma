@@ -91,6 +91,18 @@
     const views = qsa('.view');
     const menuBtns = qsa('.menu-btn');
 
+    // Configurar upload de archivos UNA SOLA VEZ
+    setupFileUpload();
+
+    // ✅ CONFIGURAR botón de actualizar historial
+    const refreshBtn = qs('#refreshHistory');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', function () {
+        console.log('🔄 Actualizando historial manualmente...');
+        updateHistoryTable();
+      });
+    }
+
     // Función para mostrar vistas
     function showView(id) {
       console.log('👀 Mostrando vista:', id);
@@ -162,9 +174,6 @@
 
     // Mostrar vista por defecto
     showView('home');
-
-    // Configurar sistema de archivos
-    setupFileUpload();
   }
 
   // Manejar logout
@@ -176,7 +185,13 @@
 
   // Inicializar vista de diagnóstico
   function initializeDiagnoseView() {
-    console.log('🖼️ Inicializando vista de diagnóstico...');
+    console.log('🖼️ initializeDiagnoseView llamado - currentFile:', currentFile ? currentFile.name : 'null');
+
+    // ✅ NO resetear si ya hay una imagen cargada
+    if (currentFile) {
+      console.log('✅ Imagen ya cargada, manteniendo estado actual');
+      return;
+    }
 
     const btnPredict = qs('#btnPredict');
     const preview = qs('#preview');
@@ -196,7 +211,6 @@
       resultBox.classList.add('hidden');
     }
 
-    currentFile = null;
     lastPrediction = null;
 
     // Destruir gráficos anteriores
@@ -220,64 +234,108 @@
 
     console.log('📁 Configurando upload de archivos...');
 
+    // ✅ CONTADOR para debug
+    let eventCount = 0;
+
+    // Limpiar event listeners anteriores clonando elementos
+    const cleanDropZone = dropZone.cloneNode(true);
+    const cleanFileInput = fileInput.cloneNode(true);
+    dropZone.parentNode.replaceChild(cleanDropZone, dropZone);
+    fileInput.parentNode.replaceChild(cleanFileInput, fileInput);
+
     // Eventos drag & drop
     ['dragenter', 'dragover'].forEach(ev => {
-      dropZone.addEventListener(ev, e => {
+      cleanDropZone.addEventListener(ev, e => {
         e.preventDefault();
-        dropZone.classList.add('drag');
+        cleanDropZone.classList.add('drag');
       });
     });
 
     ['dragleave', 'drop'].forEach(ev => {
-      dropZone.addEventListener(ev, e => {
+      cleanDropZone.addEventListener(ev, e => {
         e.preventDefault();
-        dropZone.classList.remove('drag');
+        cleanDropZone.classList.remove('drag');
       });
     });
 
-    dropZone.addEventListener('click', () => {
-      fileInput.click();
+    cleanDropZone.addEventListener('click', () => {
+      cleanFileInput.click();
     });
 
-    fileInput.addEventListener('change', e => {
+    cleanFileInput.addEventListener('change', e => {
+      eventCount++;
+      console.log(`📁 Input change event #${eventCount}:`, e.target.files.length);
+
+      // ✅ IGNORAR eventos con 0 archivos
+      if (e.target.files.length === 0) {
+        console.log('⚠️ Evento con 0 archivos, ignorando...');
+        return;
+      }
+
       if (e.target.files.length > 0) {
         handleFiles(e.target.files);
+        // ✅ RESETEAR el input después de usar el archivo
+        e.target.value = '';
       }
     });
 
-    dropZone.addEventListener('drop', e => {
+    cleanDropZone.addEventListener('drop', e => {
+      eventCount++;
+      console.log(`📁 Drop event #${eventCount}:`, e.dataTransfer.files.length);
       if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
         handleFiles(e.dataTransfer.files);
       }
     });
 
-    // Manejar archivos seleccionados
-    function handleFiles(files) {
-      const file = files[0];
-      if (!file) return;
+    // Configurar botón de predicción (solo una vez)
+    if (!btnPredict.hasListener) {
+      btnPredict.addEventListener('click', handleImageAnalysis);
+      btnPredict.hasListener = true;
+    }
+  }
 
-      if (!file.type.startsWith('image/')) {
-        alert('❌ Por favor suba una imagen válida (JPEG, PNG, etc.)');
-        return;
-      }
+  // Manejar archivos seleccionados
+  function handleFiles(files) {
+    console.log('🔄 handleFiles llamado con:', files.length, 'archivos');
 
-      currentFile = file;
-      const url = URL.createObjectURL(file);
-
-      if (preview) {
-        preview.src = url;
-        preview.classList.remove('hidden');
-      }
-
-      if (btnPredict) {
-        btnPredict.disabled = false;
-      }
-
-      console.log('✅ Imagen cargada:', file.name);
+    // ✅ PROTECCIÓN: Ignorar si no hay archivos
+    if (files.length === 0) {
+      console.log('❌ handleFiles llamado con 0 archivos, ignorando');
+      return;
     }
 
-    // Configurar botón de predicción
-    btnPredict.addEventListener('click', handleImageAnalysis);
+    const file = files[0];
+    if (!file) {
+      console.log('❌ No hay archivo');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      alert('❌ Por favor suba una imagen válida (JPEG, PNG, etc.)');
+      return;
+    }
+
+    console.log('✅ Asignando nueva imagen:', file.name);
+    currentFile = file;
+
+    const preview = qs('#preview');
+    const btnPredict = qs('#btnPredict');
+
+    if (preview) {
+      // ✅ USAR approach más confiable para el preview
+      const url = URL.createObjectURL(file);
+      preview.src = url;
+      preview.alt = 'Vista previa de ' + file.name;
+      preview.classList.remove('hidden');
+      console.log('🖼️ Preview actualizado con URL.createObjectURL');
+    }
+
+    if (btnPredict) {
+      btnPredict.disabled = false;
+      console.log('🔘 Botón de análisis habilitado');
+    }
+
+    console.log('✅ Imagen cargada definitivamente:', file.name);
   }
 
   // Manejar análisis de imagen
@@ -320,6 +378,8 @@
         showPrediction(data);
         enableResultsButton();
         updateHistoryTable();
+
+        // ✅ IMPORTANTE: NO llamar showView() aquí para no resetear la vista
 
       } else {
         let errorMessage = 'Error en el servidor';
