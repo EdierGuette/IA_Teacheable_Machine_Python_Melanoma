@@ -1,2 +1,14 @@
 venv/
 DataSet_Teachable_Machine_IA/
+# Ignorar archivos compilados de Python
+*.pyc
+*.pyo
+*.pyd
+
+# Ignorar carpetas de caché de Python
+__pycache__/
+*/__pycache__/
+
+# Ignorar archivos de cache de migraciones Django compilados
+migrations/__pycache__/
+*/migrations/__pycache__/
